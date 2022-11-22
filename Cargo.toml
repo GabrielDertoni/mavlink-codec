@@ -1,0 +1,12 @@
+[package]
+name = "mavlink-codec"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+bytes = "1.3.0"
+crc-any = "2.4.3"
+mavlink = { version = "0.10.1", default-features = false, features = ["std", "common"] }
+tokio-util = { version = "0.7.4", features = ["codec"], default-features = false }
