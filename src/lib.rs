@@ -14,6 +14,12 @@ use mavlink::{
 /// `M` is phantom and holds the type of message that you wish to parse.
 pub struct MavMessageSerde<M>(PhantomData<fn() -> M>);
 
+impl<M: mavlink::Message> MavMessageSerde<M> {
+    pub fn new() -> MavMessageSerde<M> {
+        MavMessageSerde(PhantomData)
+    }
+}
+
 /// A mavlink message together with the message header.
 #[derive(Clone, Debug)]
 pub struct MavMsgWithHeader<M: mavlink::Message> {
