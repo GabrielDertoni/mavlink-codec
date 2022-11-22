@@ -253,12 +253,12 @@ impl<M: Message> Decoder for MavMessageSerde<M> {
     }
 }
 
-impl<M: mavlink::Message> Encoder<MavMsgWithHeader<MaybeRawMsg<M>>> for MavMessageSerde<M> {
+impl<M: mavlink::Message> Encoder<MavMsgWithHeader<M>> for MavMessageSerde<M> {
     type Error = MessageWriteError;
 
     fn encode(
         &mut self,
-        item: MavMsgWithHeader<MaybeRawMsg<M>>,
+        item: MavMsgWithHeader<M>,
         dst: &mut bytes::BytesMut,
     ) -> Result<(), Self::Error> {
         match item.mav_version {
