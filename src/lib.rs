@@ -10,8 +10,11 @@ use mavlink::{
     MavHeader,
 };
 
-struct MavMessageSerde<M>(PhantomData<fn() -> M>);
+/// Unit struct to allow serialization and desserialization of mavlink messages. The type parameter
+/// `M` is phantom and holds the type of message that you wish to parse.
+pub struct MavMessageSerde<M>(PhantomData<fn() -> M>);
 
+/// A mavlink message together with the message header.
 #[derive(Clone, Debug)]
 pub struct MavMsgWithHeader<M: mavlink::Message> {
     pub mav_version: MavlinkVersion,
@@ -19,36 +22,14 @@ pub struct MavMsgWithHeader<M: mavlink::Message> {
     pub msg:         M,
 }
 
+/// A message type that will parse with any payload as a raw message. This allows parsing of custom
+/// message types that are not described by the type `M`. If the parsing succeeds, then `M` is
+/// parsed and stored in the `MaybeRawMsg::Standard` variant.
 #[derive(Debug)]
 pub enum MaybeRawMsg<M> {
     Standard(M),
     // TODO: Improve this.
     Raw(MavMsgRaw),
-}
-
-#[derive(Debug)]
-pub struct MavMsgRaw {
-    pub id:      u32,
-    pub len:     u8, // Don't have type info to indicate the size
-    pub payload: [u8; 48],
-}
-
-impl MavMsgRaw {
-    pub fn from_template<M: mavlink::Message>(template: M) -> Self {
-        let bytes = template.ser();
-        assert!(bytes.len() <= 48);
-        let mut payload = [0_u8; 48];
-        payload[..bytes.len()].copy_from_slice(&bytes);
-        Self {
-            id: template.message_id(),
-            len: bytes.len() as u8,
-            payload,
-        }
-    }
-
-    pub fn payload(&mut self) -> &mut [u8] {
-        &mut self.payload[..self.len as usize]
-    }
 }
 
 impl<M: mavlink::Message> mavlink::Message for MaybeRawMsg<M> {
@@ -111,6 +92,32 @@ impl<M: mavlink::Message> mavlink::Message for MaybeRawMsg<M> {
 
     fn extra_crc(id: u32) -> u8 {
         M::extra_crc(id)
+    }
+}
+
+/// A raw mavlink message that allows access to the bytes of the payload directly.
+#[derive(Debug)]
+pub struct MavMsgRaw {
+    pub id:      u32,
+    pub len:     u8, // Don't have type info to indicate the size
+    pub payload: [u8; 48],
+}
+
+impl MavMsgRaw {
+    pub fn from_template<M: mavlink::Message>(template: M) -> Self {
+        let bytes = template.ser();
+        assert!(bytes.len() <= 48);
+        let mut payload = [0_u8; 48];
+        payload[..bytes.len()].copy_from_slice(&bytes);
+        Self {
+            id: template.message_id(),
+            len: bytes.len() as u8,
+            payload,
+        }
+    }
+
+    pub fn payload(&mut self) -> &mut [u8] {
+        &mut self.payload[..self.len as usize]
     }
 }
 
