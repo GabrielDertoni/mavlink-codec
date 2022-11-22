@@ -5,7 +5,6 @@ use crc_any::CRCu16;
 use bytes::{Buf, BufMut};
 use mavlink::{
     error::{MessageReadError, MessageWriteError},
-    common::MavMessage,
     Message,
     MavlinkVersion,
     MavHeader,
@@ -146,9 +145,8 @@ impl<M: mavlink::Message> mavlink::Message for MaybeRawMsg<M> {
 //
 
 // source: https://github.com/iridia-ulb/supervisor/blob/34220c6b9627f5e6cc02a190ac3dc9bd849ab6b5/src/robot/drone/codec.rs
-// TODO: MavMessage could be any M that implements Message. But this is like this for debugging
-impl Decoder for MavMessageSerde<MavMessage> {
-    type Item = MavMsgWithHeader<MavMessage>;
+impl<M: Message> Decoder for MavMessageSerde<M> {
+    type Item = MavMsgWithHeader<M>;
     type Error = MessageReadError;
 
     fn decode(&mut self, src: &mut bytes::BytesMut) -> Result<Option<Self::Item>, Self::Error> {
@@ -226,7 +224,7 @@ impl Decoder for MavMessageSerde<MavMessage> {
                 u32::from_le_bytes(bytes)
             }
         };
-        crc_calc.digest(&[MavMessage::extra_crc(msgid)]);
+        crc_calc.digest(&[M::extra_crc(msgid)]);
 
         if crc_calc.get_crc() != crc {
             // CRC check failed, skip this message
@@ -234,7 +232,7 @@ impl Decoder for MavMessageSerde<MavMessage> {
             return Ok(None);
         }
 
-        let msg = MavMessage::parse(ver, msgid, payload.as_ref())?;
+        let msg = M::parse(ver, msgid, payload.as_ref())?;
         payload.advance(payload.remaining());
         Ok(Some(MavMsgWithHeader {
             mav_version: ver,
